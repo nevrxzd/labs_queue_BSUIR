@@ -63,7 +63,7 @@ def fetch_queues():
                 for row in result:
                     queue.append({
                         'id': row[0],  # Порядковый номер столбца id
-                        'username': row[1],  # Порядковый номер столбца day_of_week
+                        'username': row[1],  # Порядковый номер столбца username
                     })
             else:
                 queue.append("Таблица пуста\n")
@@ -94,7 +94,7 @@ def add_queue(lesson):
 
 def add_person_to_queue(lesson, num, username):
     inspector = inspect(engine_queue)
-    if inspector.has_table(lesson):
+    if inspector.has_table(lesson): #проверка на существование предмета
         base = declarative_base()
         class Queue(base):
             __tablename__ = f"{lesson}"
@@ -103,7 +103,7 @@ def add_person_to_queue(lesson, num, username):
         scession = SessionLocalQueue()
         user_exists = scession.query(Queue).filter_by(nickname=username).first()
         id_exists = scession.query(Queue).filter_by(id=num).first()
-        if not user_exists:
+        if not user_exists: #проверка на то, что человек уже записан
             if not id_exists:
                 add_person = Queue(
                     id= num,
