@@ -1,0 +1,6 @@
+SQLAlchemy
+aiogram
+httpx
+uvicorn
+fastapi
+pydantic
