@@ -146,7 +146,7 @@ async def input_to_queue(message: Message) -> None:
 
 
 
-#хуйню высрал
+#trash
 @router.message()
 async def trash(message: Message) -> None:
     await message.answer("Неуместно в данном контексте. Вы точно имели ввиду рабочую команду"
