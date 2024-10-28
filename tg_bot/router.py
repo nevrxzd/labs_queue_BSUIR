@@ -35,7 +35,7 @@ async def show_queue_menu(callback: CallbackQuery, state: FSMContext):
         )
 
 #контакт старосты, кнопка "написать старосте"
-@router.callback_query(F.data == "и ты хотел мифические тексты")
+@router.callback_query(F.data == "andrew")
 async def show_queue_menu(callback: CallbackQuery):
     await callback.message.edit_text(
         text="Контакт: @kolbje",
