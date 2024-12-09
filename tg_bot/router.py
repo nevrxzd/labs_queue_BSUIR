@@ -19,7 +19,7 @@ router = Router()
 @router.message(Command("start"))
 async def cmd_start(message: Message):
     await message.answer(
-        "Привет! Нажимая кнопку <b>«Приступить»</b> ты соглашаешься с <a href='https://u.to/H_XuIA '>условиями пользования</a>.",
+        "Привет! Нажимая кнопку <b>«Приступить»</b> ты соглашаешься с <a href='ll '>условиями пользования</a>.",
         reply_markup=start(),
         parse_mode="HTML",
         disable_web_page_preview=True
