@@ -4,3 +4,4 @@ httpx
 uvicorn
 fastapi
 pydantic
+psycopg2

@@ -14,8 +14,8 @@ def main_menu() -> InlineKeyboardMarkup:
         )
     )
     kb.row(InlineKeyboardButton(
-        text="Написать старосте",
-        callback_data="andrew"
+        text="Задать группу",
+        callback_data="set_group"
         )
     )
     return kb.as_markup()

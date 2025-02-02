@@ -5,13 +5,13 @@ from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import Message,CallbackQuery
 from aiogram.fsm.state import State, StatesGroup
-from defs import get_timetable, check_lesson, add_queue, add_person_to_queue, fetch_queues
+from defs import get_timetable, check_lesson, add_queue, add_person_to_queue, fetch_queues, set_group
 
 
 class Form(StatesGroup):
     laba_input_waiting = State()
     laba_queueadd_waiting = State()
-
+    laba_set_group = State()
 
 router = Router()
 
@@ -34,13 +34,21 @@ async def show_queue_menu(callback: CallbackQuery, state: FSMContext):
         reply_markup=main_menu(),
         )
 
-#контакт старосты, кнопка "написать старосте"
-@router.callback_query(F.data == "andrew")
-async def show_queue_menu(callback: CallbackQuery):
+#
+@router.callback_query(F.data == "set_group")
+async def show_queue_menu(callback: CallbackQuery, state:FSMContext):
     await callback.message.edit_text(
-        text="Контакт: @kolbje",
+        text="Введите номер группы",
         reply_markup=admin()
     )
+    await state.set_state(Form.laba_set_group)
+
+
+@router.message(Form.laba_set_group)
+async def set_group_handler(message:Message, state:FSMContext):
+    await set_group(message.text)
+    await state.clear()
+    await message.answer("Группа успешно привязана.", reply_markup=admin())
 
 #schedule view
 @router.callback_query(F.data == "show_schedule")

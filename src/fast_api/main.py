@@ -1,10 +1,10 @@
 import httpx
 import uvicorn
 from fastapi import FastAPI, HTTPException
-from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from pydantic import BaseModel
-from schedule_model import Base, Timetable
+from src.tg_bot.schedule_model import Base, Timetable
 
 app = FastAPI()
 

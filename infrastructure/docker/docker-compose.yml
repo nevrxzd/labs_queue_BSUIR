@@ -1,0 +1,31 @@
+services:
+  app:
+    container_name: labs-bot-app
+    image: labs-bot-app:latest
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+  postgres:
+    container_name: labs-bot-postgres
+    image: postgres:16.6
+    environment:
+      POSTGRES_USER: bot
+      POSTGRES_PASSWORD: bot123
+      POSTGRES_DB: labs
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./volumes/postgres_data
