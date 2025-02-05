@@ -13,3 +13,4 @@ class Timetable(Base):
     subject = Column(String)
     numsubgroup = Column(String)
     start_time = Column(String)
+    chat_id = Column(String)

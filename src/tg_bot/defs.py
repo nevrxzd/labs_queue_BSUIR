@@ -1,16 +1,12 @@
 import httpx
-from schedule_model import Base, Timetable
-from sqlalchemy import Column, Integer, MetaData, String, create_engine, inspect, text
+from sqlalchemy import create_engine, Column, Integer, String, text, inspect, MetaData
 from sqlalchemy.orm import declarative_base, sessionmaker
+from schedule_model import Timetable, Base
 
 # Настройки базы данных
 TIMETABLE_DATABASE_URL = "postgresql+psycopg2://bot:bot123@labs-bot-postgres/labs"
 engine_timetable = create_engine(TIMETABLE_DATABASE_URL)
-SessionLocalTimeTable = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine_timetable,
-)
+SessionLocalTimeTable = sessionmaker(autocommit=False, autoflush=False, bind=engine_timetable)
 
 QUEUE_DATABASE_URL = "postgresql+psycopg2://bot:bot123@labs-bot-postgres/labs"
 engine_queue = create_engine(QUEUE_DATABASE_URL)
@@ -18,7 +14,7 @@ SessionLocalQueue = sessionmaker(autocommit=False, autoflush=False, bind=engine_
 
 
 # Функция для получения данных из базы
-def get_timetable():
+async def get_timetable():
     with engine_timetable.connect() as connection:
         result = connection.execute(
             text("""
@@ -35,7 +31,7 @@ def get_timetable():
                 WHEN day_of_week = 'Воскресенье' THEN 7
                 ELSE 8
               END;
-        """),
+        """)
         )
 
         timetable = []
@@ -48,16 +44,17 @@ def get_timetable():
                     "subject": row[3],  # Порядковый номер столбца subject
                     "numsubgroup": row[4],  # Порядковый номер столбца numsubgroup
                     "start_time": row[5],
-                },
+                }
             )
         return timetable
 
 
-def fetch_queues():
+async def fetch_queues():
     # Инициализация метаданных
     metadata = MetaData()
     metadata.reflect(engine_queue)
     queue = []
+    queue_name = []
     # Перебираем все таблицы в базе данных queue
     with engine_queue.connect() as connection:
         for table_name in metadata.tables:
@@ -68,7 +65,7 @@ def fetch_queues():
                         SELECT *
                         FROM public."{table_name}"
                         ORDER BY id ASC
-                    """),
+                    """)
             )
             # Проверяем, есть ли данные в таблице
             if result:
@@ -77,7 +74,7 @@ def fetch_queues():
                         {
                             "id": row[0],  # Порядковый номер столбца id
                             "username": row[1],  # Порядковый номер столбца username
-                        },
+                        }
                     )
             else:
                 queue.append("Таблица пуста\n")
@@ -85,7 +82,7 @@ def fetch_queues():
     return queue
 
 
-def check_lesson(lesson: String):
+async def check_lesson(lesson: String):
     timetable = get_timetable()
     for item in timetable:
         if item["subject"] == lesson:
@@ -93,7 +90,7 @@ def check_lesson(lesson: String):
     return False
 
 
-def add_queue(lesson):
+async def add_queue(lesson):
     inspector = inspect(engine_queue)
     if not inspector.has_table(lesson):
         base = declarative_base()
@@ -106,10 +103,11 @@ def add_queue(lesson):
         # Создаем все таблицы, которые еще не существуют
         base.metadata.create_all(engine_queue)
         return "200"
-    return "Already exist"
+    else:
+        return "Already exist"
 
 
-def add_person_to_queue(lesson, num, username):
+async def add_person_to_queue(lesson, num, username):
     inspector = inspect(engine_queue)
     if inspector.has_table(lesson):  # проверка на существование предмета
         base = declarative_base()
@@ -124,25 +122,24 @@ def add_person_to_queue(lesson, num, username):
         id_exists = scession.query(Queue).filter_by(id=num).first()
         if not user_exists:  # проверка на то, что человек уже записан
             if not id_exists:
-                add_person = Queue(
-                    id=num,
-                    nickname=username,
-                )
+                add_person = Queue(id=num, nickname=username)
                 db = SessionLocalQueue()
                 db.add(add_person)
                 db.commit()
                 return "200"
-            return "place_holded"
-        return "Alr in queue"
-    return "Doesn't exist"
+            else:
+                return "place_holded"
+        else:
+            return "Alr in queue"
+    else:
+        return "Doesn't exist"
 
 
-async def set_group(group_num):
-    print(group_num)
+async def set_group(chat_id, group_num):
     api_url = f"https://iis.bsuir.by/api/v1/schedule?studentGroup={group_num}"
     engine = create_engine(TIMETABLE_DATABASE_URL)
 
-    session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     try:
         # Делаем GET-запрос к серверу
@@ -157,7 +154,7 @@ async def set_group(group_num):
         data = response.json()
 
         # Подключаемся к базе данных
-        db = session_local()
+        db = sessionLocal()
         Base.metadata.create_all(bind=engine)
 
         try:
@@ -167,6 +164,7 @@ async def set_group(group_num):
                     if lesson.get("lessonTypeAbbrev") == "ЛР":
                         # Создаем запись для базы данных
                         db_lesson = Timetable(
+                            chat_id=chat_id,
                             day_of_week=day,  # День недели (например, 'Суббота')
                             lesson_type_abbrev=lesson["lessonTypeAbbrev"],
                             subject=lesson["subject"],

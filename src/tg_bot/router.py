@@ -1,17 +1,11 @@
-from aiogram import F, Router
-from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
+
+from keyboard import main_menu, queue, admin, start
+from aiogram import Router, F
+from aiogram.filters import Command
+from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import CallbackQuery, Message
-from defs import (
-    add_person_to_queue,
-    add_queue,
-    check_lesson,
-    fetch_queues,
-    get_timetable,
-    set_group,
-)
-from keyboard import admin, main_menu, queue, start
+from defs import get_timetable, check_lesson, add_queue, add_person_to_queue, fetch_queues, set_group
 
 
 class Form(StatesGroup):
@@ -36,7 +30,7 @@ async def cmd_start(message: Message):
 
 # main menu window
 @router.callback_query(F.data == "back_to_main")
-async def show_queue_menu_back_to_main(callback: CallbackQuery, state: FSMContext):
+async def show_queue_menu(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.edit_text(
         "Выберите интересующий пункт меню:",
@@ -44,18 +38,16 @@ async def show_queue_menu_back_to_main(callback: CallbackQuery, state: FSMContex
     )
 
 
+#
 @router.callback_query(F.data == "set_group")
-async def show_queue_menu_set_group(callback: CallbackQuery, state: FSMContext):
-    await callback.message.edit_text(
-        text="Введите номер группы",
-        reply_markup=admin(),
-    )
+async def set_queue_menu(callback: CallbackQuery, state: FSMContext):
+    await callback.message.edit_text(text="Введите номер группы", reply_markup=admin())
     await state.set_state(Form.laba_set_group)
 
 
 @router.message(Form.laba_set_group)
 async def set_group_handler(message: Message, state: FSMContext):
-    await set_group(message.text)
+    await set_group(message.chat.id, message.text)
     await state.clear()
     await message.answer("Группа успешно привязана.", reply_markup=admin())
 
@@ -64,21 +56,22 @@ async def set_group_handler(message: Message, state: FSMContext):
 @router.callback_query(F.data == "show_schedule")
 async def show_schedule_menu(callback: CallbackQuery):
     timetable = get_timetable()
-    print(type(timetable))
     result_message = "Расписание:\n"
+    schedule_showed = False
     for item in timetable:
-        print(type(item))
-        result_message += (
-            f"День: {item['day_of_week']}\n"
-            f"Тип занятия: {item['lesson_type_abbrev']}\n"
-            f"Предмет: {item['subject']}\n"
-            f"Подгруппа: {item['numsubgroup']}\n"
-            f"Время начала: {item['start_time']}\n\n"
-        )
-    await callback.message.edit_text(
-        text=result_message,
-        reply_markup=admin(),
-    )
+        if item["chat_id"] == callback.message.chat.id:
+            schedule_showed = True
+            result_message += (
+                f"День: {item['day_of_week']}\n"
+                f"Тип занятия: {item['lesson_type_abbrev']}\n"
+                f"Предмет: {item['subject']}\n"
+                f"Подгруппа: {item['numsubgroup']}\n"
+                f"Время начала: {item['start_time']}\n\n"
+            )
+
+    if not schedule_showed:
+        result_message += "Расписание не найдено"
+    await callback.message.edit_text(text=result_message, reply_markup=admin())
 
 
 # queue view
@@ -95,12 +88,9 @@ async def show_queue(callback: CallbackQuery):
             is_recording = True  # Начинаем запись данных
         elif is_recording:
             # Если находимся в записи, добавляем данные в результат
-            result_message += f"Позиция: {item['id']}\nНик занявшего: @{item['username']}\n"
+            result_message += f"Позиция: {item['id']}\n" f"Ник занявшего: @{item['username']}\n"
 
-    await callback.message.edit_text(
-        text=result_message,
-        reply_markup=admin(),
-    )
+    await callback.message.edit_text(text=result_message, reply_markup=admin())
 
 
 # меню кнопки "редактировать очередь"
@@ -116,8 +106,7 @@ async def show_queue_menu(callback: CallbackQuery):
 @router.callback_query(F.data == "add_queue")
 async def add_queue_menu(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text(
-        text="Введите название предмета и номер лабы по счету(чувствителен к регистру)",
-        reply_markup=admin(),
+        text="Введите название предмета и номер лабы по счету(чувствителен к регистру)", reply_markup=admin()
     )
     await state.set_state(Form.laba_input_waiting)
 
@@ -135,28 +124,18 @@ async def input_laby(message: Message, state: FSMContext) -> None:
                 await message.reply("Очередь успешно создана!", reply_markup=admin())
                 await state.clear()
             else:
-                await message.reply(
-                    "Очередь уже существует, записывайтесь:)",
-                    reply_markup=admin(),
-                )
+                await message.reply("Очередь уже существует, записывайтесь:)", reply_markup=admin())
         else:
-            await message.reply(
-                "Предмет с таким названием не найден",
-                reply_markup=admin(),
-            )
+            await message.reply("Предмет с таким названием не найден", reply_markup=admin())
     else:
-        await message.reply(
-            "Пожалуйста, введите ровно два слова через пробел.",
-            reply_markup=admin(),
-        )
+        await message.reply("Пожалуйста, введите ровно два слова через пробел.", reply_markup=admin())
 
 
 # запись в очередь
 @router.callback_query(F.data == "add_to_queue")
 async def add_to_queue(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text(
-        text="Введите название предмета, номер лабы и позицию в очереди",
-        reply_markup=admin(),
+        text="Введите название предмета, номер лабы и позицию в очереди", reply_markup=admin()
     )
     await state.set_state(Form.laba_queueadd_waiting)
 
@@ -169,38 +148,24 @@ async def input_to_queue(message: Message) -> None:
         lesson, num, pos = words
         checker = check_lesson(lesson)
         if checker:
-            second_check = add_person_to_queue(
-                lesson + " " + num,
-                pos,
-                message.from_user.username,
-            )
+            second_check = add_person_to_queue(lesson + " " + num, pos, message.from_user.username)
             if second_check == "200":
-                await message.reply(
-                    f"Вы добавлены в очередь на {pos} позицию.",
-                    reply_markup=admin(),
-                )
+                await message.reply(f"Вы добавлены в очередь на {pos} позицию.", reply_markup=admin())
             elif second_check == "Alr in queue":
                 await message.reply("Вы уже заняли очередь", reply_markup=admin())
             elif second_check == "place_holded":
                 await message.reply(
-                    "Место занято, выберите другое(введите то же сообщение но измените позицию).",
-                    reply_markup=admin(),
+                    "Место занято, выберите другое(введите то же сообщение но измените позицию).", reply_markup=admin()
                 )
         else:
-            await message.reply(
-                "Предмет с таким названием не найден",
-                reply_markup=admin(),
-            )
+            await message.reply("Предмет с таким названием не найден", reply_markup=admin())
     else:
-        await message.reply(
-            "Пожалуйста, введите ровно три слова через пробел.",
-            reply_markup=admin(),
-        )
+        await message.reply("Пожалуйста, введите ровно три слова через пробел.", reply_markup=admin())
 
 
 # trash
 @router.message()
 async def trash(message: Message) -> None:
     await message.answer(
-        "Неуместно в данном контексте. Вы точно имели ввиду рабочую команду" " или в процессе редактирования очереди?",
+        "Неуместно в данном контексте. Вы точно имели ввиду рабочую команду, или в процессе редактирования очереди?"
     )

@@ -75,12 +75,3 @@ def admin() -> InlineKeyboardMarkup:
         ),
     )
     return kb.as_markup()
-
-
-def add_queue() -> InlineKeyboardMarkup:
-    kb = InlineKeyboardBuilder()
-    kb.row(
-        InlineKeyboardButton(
-            text="",
-        ),
-    )
