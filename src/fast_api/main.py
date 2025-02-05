@@ -1,9 +1,10 @@
 import httpx
 import uvicorn
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from pydantic import BaseModel
+
 from src.tg_bot.schedule_model import Base, Timetable
 
 app = FastAPI()
@@ -16,6 +17,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # Создаем таблицы
 Base.metadata.create_all(bind=engine)
 
+
 # Pydantic модель для запроса
 class Lesson(BaseModel):
     day_of_week: str
@@ -23,6 +25,7 @@ class Lesson(BaseModel):
     subject: str
     numsubgroup: str
     start_time: str
+
 
 @app.get("/fetch-timetable")
 async def fetch_timetable():
@@ -36,7 +39,10 @@ async def fetch_timetable():
 
         # Проверяем успешность запроса
         if response.status_code != 200:
-            raise HTTPException(status_code=response.status_code, detail="Ошибка при получении данных")
+            raise HTTPException(
+                status_code=response.status_code,
+                detail="Ошибка при получении данных",
+            )
 
         # Получаем JSON ответ
         data = response.json()
@@ -45,7 +51,7 @@ async def fetch_timetable():
         db = SessionLocal()
 
         try:
-            for day, lessons in data['schedules'].items():  # Итерируемся по дням недели
+            for day, lessons in data["schedules"].items():  # Итерируемся по дням недели
                 for lesson in lessons:  # Итерируемся по занятиям внутри каждого дня
                     # Фильтруем занятия по "lessonTypeAbbrev" == "ЛР"
                     if lesson.get("lessonTypeAbbrev") == "ЛР":
@@ -55,7 +61,7 @@ async def fetch_timetable():
                             lesson_type_abbrev=lesson["lessonTypeAbbrev"],
                             subject=lesson["subject"],
                             numsubgroup=lesson["numSubgroup"],
-                            start_time=lesson["startLessonTime"]
+                            start_time=lesson["startLessonTime"],
                         )
                         db.add(db_lesson)
             db.commit()
@@ -63,12 +69,12 @@ async def fetch_timetable():
             db.rollback()
             print(f"Error occurred: {e}")
 
-
         finally:
             db.close()
 
     except httpx.HTTPError as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", port=8001, log_level="info")

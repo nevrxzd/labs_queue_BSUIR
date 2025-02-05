@@ -5,3 +5,4 @@ uvicorn
 fastapi
 pydantic
 psycopg2
+ruff==0.7.0

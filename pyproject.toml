@@ -1,0 +1,23 @@
+[tool.ruff]
+select = ["E", "F", "C", "N"]
+
+# Exclude specific directories
+exclude = [
+    "venv",
+    "build",
+    "dist",
+    ".git",
+    "__pycache__",
+]
+
+# Set the maximum line length
+line-length = 120
+
+# Enable autofix for certain rules
+fix = true
+
+# Specify the target version of Python
+target-version = "py312"
+
+# Ignore specific rules
+ignore = []
